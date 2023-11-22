@@ -2,7 +2,7 @@
 import sqlalchemy
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
-from sqlalchemy import create_engine, func
+from sqlalchemy import create_engine
 import datetime as dt
 import numpy as np
 from flask import Flask, jsonify
@@ -10,7 +10,7 @@ from flask import Flask, jsonify
 #################################################
 # Database Setup
 #################################################
-engine = create_engine("sqlite:///C:/Users/karso/OneDrive/Desktop/sqlalchemy-challenge/SurfsUp/Resources/hawaii.sqlite")
+engine = create_engine("sqlite:///C:/Users/karso/OneDrive/Desktop/Past Challenges/sqlalchemy-challenge/SurfsUp/Resources/hawaii.sqlite")
 
 # reflect an existing database into a new model
 Base = automap_base()
@@ -44,7 +44,7 @@ def welcome():
                 <meta charset="UTF-8">
                 <meta http-equiv="X-UA-Compatible" content="IE=edge">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>My First CSS Adventure</title>
+                <title>Hawaii Climate API</title>
             </head>
            
             <body>
@@ -97,17 +97,15 @@ def tobs():
     return jsonify(all_results)
 
 @app.route("/api/v1.0/<start>")
-def startfunctionality(start):
+def startfunctionalitytest(start):
  
     canonicalized = start.replace(" ", "")
     date = dt.datetime.strptime(canonicalized, '%Y-%m-%d')
+    
+    date_list = session.query(Measurement.date).filter(Measurement.date >= date).all()
+    data_list = session.query(np.min(Measurement.tobs),np.max(Measurement.tobs),np.mean(Measurement.tobs)).filter(Measurement.date >= date).all()
 
-    min_temp = session.query(func.min(Measurement.tobs)).filter(Measurement.date >= date).all()
-    max_temp = session.query(func.max(Measurement.tobs)).filter(Measurement.date >= date).all()
-    avg_temp = session.query(func.avg(Measurement.tobs)).filter(Measurement.date >= date).all()
-
-    results_list = list(np.ravel([min_temp, max_temp, avg_temp]))
-    return jsonify( { f"Start Date: {canonicalized}" : f"TMIN: {results_list[0]}, TMAX: {results_list[1]}, TAVG: {round(results_list[2], 2)}" } )
+    return jsonify( { f"Start Date: {date_list}" : f"(TMIN, TMAX, TAVG): {data_list}"} )
 
 @app.route("/api/v1.0/<start>/<end>")
 def endfunctionality(start, end):
@@ -116,14 +114,11 @@ def endfunctionality(start, end):
     start_date = dt.datetime.strptime(canonicalized_start, '%Y-%m-%d')
     canonicalized_end = end.replace(" ", "")
     end_date = dt.datetime.strptime(canonicalized_end, '%Y-%m-%d')
+    
+    date_list = session.query(Measurement.date).filter(Measurement.date >= start_date).filter(Measurement.date <= end_date).all()
+    data_list = session.query(np.min(Measurement.tobs),np.max(Measurement.tobs),np.mean(Measurement.tobs)).filter(Measurement.date >= start_date).filter(Measurement.date <= end_date).all()
 
-    min_temp = session.query(func.min(Measurement.tobs)).filter(Measurement.date >= start_date).filter(Measurement.date <= end_date).all()
-    max_temp = session.query(func.max(Measurement.tobs)).filter(Measurement.date >= start_date).filter(Measurement.date <= end_date).all()
-    avg_temp = session.query(func.avg(Measurement.tobs)).filter(Measurement.date >= start_date).filter(Measurement.date <= end_date).all()
-
-    results_list = list(np.ravel([min_temp, max_temp, avg_temp]))
-
-    return jsonify({ f"Start Date: {canonicalized_start}, End Date: {canonicalized_end}" : f"TMIN: {results_list[0]}, TMAX: {results_list[1]}, TAVG: {round(results_list[2], 2)}" })
+    return jsonify({ f"Dates Surveyed: {date_list} " : f"(TMIN, TMAX, TAVG): {data_list}"})
 
 if __name__ == "__main__":
     app.run()
